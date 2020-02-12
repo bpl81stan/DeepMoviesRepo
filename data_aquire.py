@@ -4,36 +4,66 @@ import requests
 import json
 import numpy as np
 from time import sleep
+import io
+import zipfile
 from sklearn.feature_extraction.text import TfidfTransformer
 from datetime import datetime
 
 ##################################################################################
 #### Function retreives data from stored csv files from movielens datasets
 ##################################################################################
+def download_data_file(dataset):
 
-def get_100k_data_file(filename, path=r'data/ml-100k',sep='|', print_head=True):
+    if dataset=='100k':
+        url = 'http://files.grouplens.org/datasets/movielens/ml-100k.zip'
+    elif dataset=='25m':
+        url = 'http://files.grouplens.org/datasets/movielens/ml-25m.zip'
+    else:
+        print("Not a valid dataset selected.")
 
-    df = pd.read_csv(path+os.sep+filename, sep=sep)
+    r = requests.get(url)
+
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+
+    z.extractall(path=r'data')
+
+
+def get_data_file(filename, dataset, path, print_head=True):
+
+    if not os.path.exists(path):
+        download_data_file(dataset)
+
+    file_headers=pd.read_csv(r'data\file_headers.csv', sep=';',index_col=False)
+
+    file_headers = file_headers.loc[file_headers['filename'] == filename]
+
+
+    headings = list(str(file_headers.iloc[0,3]).split(','))
+
+    sep = file_headers.iloc[0,2]
+
+    df = pd.read_csv(os.path.join(path,filename), sep=sep, names=headings, encoding='latin-1')
 
     if print_head:
         print(df.head())
 
     return df
 
+
 def get_100k_data():
 
-    users = get_100k_data_file('u.user')
-    ratings = get_100k_data_file('u.data', sep='\t')
-    movies = get_100k_data_file('u.item', sep='|')
+    users = get_data_file(filename='u.user', dataset='100k', path=r'data\ml-100k', print_head=True)
+    ratings = get_data_file(filename='u.data', dataset='100k', path=r'data\ml-100k', print_head=True)
+    movies = get_data_file(filename='u.item', dataset='100k', path=r'data\ml-100k', print_head=True)
 
     return users, ratings, movies
 
-def create_df():
+def create_100k_embeddings():
 
     users, ratings, movies = get_100k_data()
 
     #cols_to_use = ratings.columns.difference(movies.columns)
-    user_movie_embedding = pd.merge(ratings, movies, left_on='item_id', right_on='item_id',
+    user_movie_embedding = pd.merge(ratings, movies, left_on='item_id', right_on='movie_id',
                                     how='left', suffixes=['_ratings', '_movies'])
 
     #cols_to_use = user_movie_embedding.columns.difference(users.columns)
@@ -87,7 +117,7 @@ def create_df():
     return user_movie_embedding
 
 
-def get_25M_data(path=r'C:\Users\brent\Documents\Projects\DeepMovies\data\ml-25m', print_head=True):
+def get_25M_data(path=r'data\ml-25m', print_head=True):
 
     directory= path
 
@@ -142,7 +172,7 @@ def get_25M_data(path=r'C:\Users\brent\Documents\Projects\DeepMovies\data\ml-25m
         print(tags.head())
 
     # read in 7. overview
-    imdb_directory=r'C:\Users\brent\Documents\Projects\DeepMovies\data\imdb'
+    imdb_directory=r'data\imdb'
     path_data = os.path.join(directory, 'movie_overview.csv')
     overviews = pd.read_csv(path_data, sep=",", header=0)
 
@@ -154,7 +184,7 @@ def get_25M_data(path=r'C:\Users\brent\Documents\Projects\DeepMovies\data\ml-25m
 
 def get_tmdb_overview(tmdb_id):
 
-    keys = pd.read_csv('api_keys.csv', sep=',', index_col=False)
+    keys = pd.read_csv(r'auth_keys\api_keys.csv', sep=',', index_col=False)
 
     api_key = keys.loc[0]['key']
 
@@ -218,7 +248,9 @@ def main():
     #                     path=r'C:\Users\brent\Documents\Projects\fastai\my-movie-recommender\data\ml-25m',
     #                     print_head=False
     # )
-    create_df()
+    user_movie_embedding = create_100k_embeddings()
+
+    print(user_movie_embedding)
 
 
 

@@ -1,0 +1,4 @@
+dataset;filename;delimiter;field_names
+100k;u.data;	;user_id,item_id,rating,timestamp
+100k;u.item;|;movie_id,movie_title,release_date,video_release_date,IMDb_URL,unknown,Action,Adventure,Animation,Children,Comedy,Crime,Documentary,Drama,Fantasy,Film-Noir,Horror,Musical,Mystery,Romance,Sci-Fi,Thriller,War,Western
+100k;u.user;|;user_id,age,gender,occupation,zip_code

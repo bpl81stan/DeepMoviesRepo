@@ -8,6 +8,7 @@ import io
 import zipfile
 from sklearn.feature_extraction.text import TfidfTransformer
 from datetime import datetime
+from definitions import ROOT_DIR
 
 ##################################################################################
 #### Function retreives data from stored csv files from movielens datasets
@@ -25,7 +26,7 @@ def download_data_file(dataset):
 
     z = zipfile.ZipFile(io.BytesIO(r.content))
 
-    z.extractall(path=r'data')
+    z.extractall(path=os.path.join(ROOT_DIR,'data'))
 
 
 def get_data_file(filename, dataset, path, print_head=True):
@@ -33,7 +34,7 @@ def get_data_file(filename, dataset, path, print_head=True):
     if not os.path.exists(path):
         download_data_file(dataset)
 
-    file_headers=pd.read_csv(r'data\file_headers.csv', sep=';',index_col=False)
+    file_headers=pd.read_csv(os.path.join(ROOT_DIR,'data','file_headers.csv'), sep=';',index_col=False)
 
     file_headers = file_headers.loc[file_headers['filename'] == filename]
 
@@ -51,10 +52,11 @@ def get_data_file(filename, dataset, path, print_head=True):
 
 
 def get_100k_data():
+    path = os.path.join(ROOT_DIR, 'data', 'ml-100k')
 
-    users = get_data_file(filename='u.user', dataset='100k', path=r'data\ml-100k', print_head=True)
-    ratings = get_data_file(filename='u.data', dataset='100k', path=r'data\ml-100k', print_head=True)
-    movies = get_data_file(filename='u.item', dataset='100k', path=r'data\ml-100k', print_head=True)
+    users = get_data_file(filename='u.user', dataset='100k', path=path, print_head=True)
+    ratings = get_data_file(filename='u.data', dataset='100k', path=path, print_head=True)
+    movies = get_data_file(filename='u.item', dataset='100k', path=path, print_head=True)
 
     return users, ratings, movies
 
@@ -73,10 +75,13 @@ def create_100k_embeddings():
     #user_movie_embedding['datetime'] = datetime.utcfromtimestamp(int(user_movie_embedding['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
     user_movie_embedding['datetime'] = pd.to_datetime(user_movie_embedding['timestamp'], unit='s')
 
-    user_movie_embedding['days_after_release_rating']=(
-            pd.to_datetime(user_movie_embedding['datetime'])-
-            pd.to_datetime(user_movie_embedding['release_date'])
-    ).dt.days
+
+
+    user_movie_embedding['days_after_release_rating']=\
+                                                    (
+                                                        pd.to_datetime(user_movie_embedding['datetime']) -
+                                                        pd.to_datetime(user_movie_embedding['release_date'])
+                                                    ).dt.days
 
     keep_columns = ['user_id',
                     'item_id',
@@ -103,8 +108,9 @@ def create_100k_embeddings():
                     'Western',
                     'age',
                     'gender',
-                    'occupation',
-                    'zip_code']
+                    'occupation'
+                    ]
+#                    'zip_code']
 
     user_movie_embedding = user_movie_embedding.loc[:, [x in keep_columns for x in user_movie_embedding.columns]]
 
@@ -112,7 +118,10 @@ def create_100k_embeddings():
 
     user_movie_embedding = pd.get_dummies(user_movie_embedding)
 
+    user_movie_embedding = user_movie_embedding.fillna(0)
+
     # print(user_movie_embedding)
+    user_movie_embedding.to_csv(os.path.join(ROOT_DIR,'data','ml-100k','embeddings.csv'))
 
     return user_movie_embedding
 
@@ -243,15 +252,15 @@ def aquire_overviews(links):
     tmbd_overview.to_csv('data/imdb/movie_overview.csv', index=False, index_label=False)
 
 
-def main():
-    # genome_scores, genome_tags, links, movies, ratings, tags, overviews = get_data(
-    #                     path=r'C:\Users\brent\Documents\Projects\fastai\my-movie-recommender\data\ml-25m',
-    #                     print_head=False
-    # )
-    user_movie_embedding = create_100k_embeddings()
-
-    print(user_movie_embedding)
-
-
-
-main()
+# def main():
+#     # genome_scores, genome_tags, links, movies, ratings, tags, overviews = get_data(
+#     #                     path=r'C:\Users\brent\Documents\Projects\fastai\my-movie-recommender\data\ml-25m',
+#     #                     print_head=False
+#     # )
+#     user_movie_embedding = create_100k_embeddings()
+#
+#     print(user_movie_embedding)
+#
+#
+#
+# main()

@@ -3,6 +3,9 @@ from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem.porter import PorterStemmer
 import pandas as pd
+import os
+from definitions import ROOT_DIR
+import numpy as np
 
 ####################################################
 # Tokenizer for removing stop words, transforming stems
@@ -37,13 +40,17 @@ def getTFIDF(movie_overview):
     tfidf = TfidfVectorizer(tokenizer=clean_text,
                             analyzer='word',
                             lowercase=True,
+                            dtype=np.float32,
+                            min_df=.001,
+                            max_df=.9,
+                            max_features=500
                             )
 
     tfidf_sparse_matrix = tfidf.fit_transform(movie_overview)
 
     tfidf_word_list = tfidf.get_feature_names()
 
-    return tfidf_sparse_matrix, pd.DataFrame(tfidf_sparse_matrix.toarray()),tfidf_word_list
+    return tfidf_sparse_matrix, pd.DataFrame(tfidf_sparse_matrix.toarray(), columns=tfidf_word_list),tfidf_word_list
 
 def test_tfidf():
     input_text=[
@@ -62,4 +69,30 @@ def test_tfidf():
 
     print(type(tfidf_df))
 
-test_tfidf()
+#test_tfidf()
+
+def clean_movie_overview():
+    path_imdb = os.path.join(ROOT_DIR, 'data', 'imdb', 'movie_overview.csv')
+
+    imdb_csv = pd.read_csv(path_imdb, header=0, index_col=False)
+
+    imdb_df = imdb_csv.fillna(-1)
+
+    imdb_df = imdb_df.astype({'movieId':'int',
+     'imdbId': 'int',
+     'tmbdId': 'int',
+     'overview': 'U'})
+
+
+    print(imdb_df)
+
+    path_imdb_new = os.path.join(ROOT_DIR, 'data', 'imdb', 'movie_overview2.csv')
+
+    imdb_df.to_csv(path_imdb_new, index=False, index_label=False)
+
+
+
+#clean_movie_overview()
+
+
+

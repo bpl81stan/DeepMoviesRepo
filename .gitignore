@@ -4,3 +4,4 @@ data/imdb/*
 .idea/*
 auth_keys
 auth_keys/*
+data/output/*

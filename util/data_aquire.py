@@ -9,6 +9,7 @@ import zipfile
 from sklearn.feature_extraction.text import TfidfTransformer
 from datetime import datetime
 from definitions import ROOT_DIR
+import util.text_processing as text
 
 ##################################################################################
 #### Function retreives data from stored csv files from movielens datasets
@@ -28,7 +29,9 @@ def download_data_file(dataset):
 
     z.extractall(path=os.path.join(ROOT_DIR,'data'))
 
-
+##################################################################################
+#### Function retreives file headers for downloaded movielens data
+##################################################################################
 def get_data_file(filename, dataset, path, print_head=True):
 
     if not os.path.exists(path):
@@ -51,6 +54,9 @@ def get_data_file(filename, dataset, path, print_head=True):
 
     return df
 
+##################################################################################
+#### Function retrieves downloaded 100k data file
+##################################################################################
 
 def get_100k_data():
     path = os.path.join(ROOT_DIR, 'data', 'ml-100k')
@@ -60,6 +66,10 @@ def get_100k_data():
     movies = get_data_file(filename='u.item', dataset='100k', path=path, print_head=True)
 
     return users, ratings, movies
+
+##################################################################################
+#### Function creates a flat file embedding for 100k data source
+##################################################################################
 
 def create_100k_embeddings():
 
@@ -118,22 +128,21 @@ def create_100k_embeddings():
 
     return user_movie_embedding
 
+##################################################################################
+#### Function creates a flat file embedding for 25M data source
+##################################################################################
 
-def create_25M_embeddings():
+def create_25M_embeddings(n= 100000):
 
-    genome_scores, genome_tags, links, movies, ratings, tags = get_25M_data()  # , overviews
+    # set fraction of 25M to run
+
+    genome_scores, genome_tags, links, movies, ratings, tags, overviews = get_25M_data(print_head=False)
+
+    ratings = ratings.sample(n=n,replace=True, random_state=42)
 
     user_movie_embedding = pd.merge(ratings, movies,
                                     left_on='movieId', right_on='movieId', how='left',
                                     suffixes=['_ratings', '_movies'])
-
-    # user_movie_embedding['datetime'] = pd.to_datetime(user_movie_embedding['timestamp'], unit='s')
-    #
-    # user_movie_embedding['days_after_release_rating'] = \
-    #     (
-    #             pd.to_datetime(user_movie_embedding['datetime']) -
-    #             pd.to_datetime(user_movie_embedding['release_date'])
-    #     ).dt.days
 
     keep_columns = ['userId',
                     'movieId',
@@ -163,7 +172,13 @@ def create_25M_embeddings():
 
     user_movie_embedding = user_movie_embedding.loc[:, [x in keep_columns for x in user_movie_embedding.columns]]
 
-    #user_movie_embedding = pd.get_dummies(user_movie_embedding)
+    user_movie_embedding = pd.merge(user_movie_embedding, overviews,
+                                                      how='left',
+                                                      left_on='movieId',
+                                                      right_on='movieId',
+                                                      suffixes=['_movie_ratings', '_overview']
+                                                      )
+
 
     user_movie_embedding = user_movie_embedding.fillna(0)
 
@@ -227,18 +242,20 @@ def get_25M_data(print_head=True):
         print(tags.head())
 
     # read in 7. overview
-    # imdb_path=  os.path.join(ROOT_DIR, 'data', 'imdb', 'movie_overview.csv')
-    #
-    # if not os.path.exists(imdb_path):
-    #     aquire_overviews(links)
-    #
-    # overviews = pd.read_csv(imdb_path, sep=",", header=0)
-    #
-    # if print_head:
-    #     print("overviews:")
-    #     print(overviews.head())
+    imdb_path=  os.path.join(ROOT_DIR, 'data', 'imdb', 'movie_overview.csv')
 
-    return genome_scores, genome_tags, links, movies, ratings, tags#, overviews
+    if not os.path.exists(imdb_path):
+        aquire_overviews(links)
+
+    overviews = pd.read_csv(imdb_path, sep=",", header=0)
+
+    overviews = get_overviews(overviews)
+
+    if print_head:
+        print("overviews:")
+        print(overviews.head())
+
+    return genome_scores, genome_tags, links, movies, ratings, tags, overviews
 
 def get_genres(movies):
 
@@ -255,6 +272,22 @@ def get_genres(movies):
 
     return movies
 
+def get_overviews(overview):
+
+    ret_overview = pd.DataFrame(columns=['movieId'], data=overview['movieId'])
+
+    print("overview:")
+    print(overview.head())
+
+    print("ret_overview:")
+    print(ret_overview.head())
+
+
+    tfidf_sparse_matrix, tfidf_df, tfidf_word_list = text.getTFIDF(overview['overview'])
+
+    ret_overview = ret_overview.merge(tfidf_df, left_index=True, right_index=True)
+
+    return ret_overview
 
 
 def get_tmdb_overview(tmdb_id):

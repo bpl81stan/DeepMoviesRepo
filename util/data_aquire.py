@@ -138,6 +138,8 @@ def create_25M_embeddings(n= 100000):
 
     genome_scores, genome_tags, links, movies, ratings, tags, overviews = get_25M_data(print_head=False)
 
+    #genome_scores, genome_tags, links, movies, ratings, tags = get_25M_data(print_head=False)
+
     ratings = ratings.sample(n=n,replace=True, random_state=42)
 
     user_movie_embedding = pd.merge(ratings, movies,
@@ -183,6 +185,34 @@ def create_25M_embeddings(n= 100000):
     user_movie_embedding = user_movie_embedding.fillna(0)
 
     user_movie_embedding.to_csv(os.path.join(ROOT_DIR, 'data', 'ml-25m', 'embeddings.csv'))
+
+    return user_movie_embedding
+
+##################################################################################
+#### Function creates a flat file embedding for 25M data source
+##################################################################################
+
+def create_25M_overviews(n= 100000):
+
+    path = os.path.join(ROOT_DIR, 'data', 'ml-25m')
+
+    overviews = get_overviews(transform='clean')
+
+    # read in 5. ratings
+    path_data = os.path.join(path, 'ratings.csv')
+    ratings = pd.read_csv(path_data, sep=",", header=0)
+
+    ratings = ratings.sample(n=n,replace=True, random_state=42)
+
+    user_movie_embedding = pd.merge(ratings, overviews,
+                                                      how='left',
+                                                      left_on='movieId',
+                                                      right_on='movieId',
+                                                      suffixes=['_movie_ratings', '_overview']
+                                                      )
+
+
+    user_movie_embedding = user_movie_embedding.fillna(0)
 
     return user_movie_embedding
 
@@ -249,7 +279,7 @@ def get_25M_data(print_head=True):
 
     overviews = pd.read_csv(imdb_path, sep=",", header=0)
 
-    overviews = get_overviews(overviews)
+    overviews = get_overviews()
 
     if print_head:
         print("overviews:")
@@ -272,20 +302,26 @@ def get_genres(movies):
 
     return movies
 
-def get_overviews(overview):
+def get_overviews(transform='tfidf'):
 
-    ret_overview = pd.DataFrame(columns=['movieId'], data=overview['movieId'])
+    # read in 7. overview
+    imdb_path=  os.path.join(ROOT_DIR, 'data', 'imdb', 'movie_overview.csv')
 
-    print("overview:")
-    print(overview.head())
+    overviews = pd.read_csv(imdb_path, sep=",", header=0)
 
-    print("ret_overview:")
-    print(ret_overview.head())
+    ret_overview = pd.DataFrame(columns=['movieId'], data=overviews['movieId'])
 
+    # print("overview:")
+    # print(overview.head())
+    #
+    # print("ret_overview:")
+    # print(ret_overview.head())
 
-    tfidf_sparse_matrix, tfidf_df, tfidf_word_list = text.getTFIDF(overview['overview'])
-
-    ret_overview = ret_overview.merge(tfidf_df, left_index=True, right_index=True)
+    if(transform=='tfidf'):
+        tfidf_sparse_matrix, tfidf_df, tfidf_word_list = text.getTFIDF(overviews['overview'])
+        ret_overview = ret_overview.merge(tfidf_df, left_index=True, right_index=True)
+    else:
+        ret_overview = text.clean_movie_overview(overviews)
 
     return ret_overview
 

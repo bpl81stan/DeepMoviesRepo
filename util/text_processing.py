@@ -71,26 +71,16 @@ def test_tfidf():
 
 #test_tfidf()
 
-def clean_movie_overview():
-    path_imdb = os.path.join(ROOT_DIR, 'data', 'imdb', 'movie_overview.csv')
+def clean_movie_overview(overviews):
 
-    imdb_csv = pd.read_csv(path_imdb, header=0, index_col=False)
+    clean_overviews=[]
 
-    imdb_df = imdb_csv.fillna(-1)
+    for o in list(overviews['overview']):
+        clean_overviews.append(' '.join(clean_text(o)))
 
-    imdb_df = imdb_df.astype({'movieId':'int',
-     'imdbId': 'int',
-     'tmbdId': 'int',
-     'overview': 'U'})
+    overviews['clean_overview']=clean_overviews
 
-
-    print(imdb_df)
-
-    path_imdb_new = os.path.join(ROOT_DIR, 'data', 'imdb', 'movie_overview2.csv')
-
-    imdb_df.to_csv(path_imdb_new, index=False, index_label=False)
-
-
+    return overviews
 
 #clean_movie_overview()
 

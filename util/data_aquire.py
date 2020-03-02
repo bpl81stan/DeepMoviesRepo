@@ -128,6 +128,7 @@ def create_100k_embeddings():
 
     return user_movie_embedding
 
+
 ##################################################################################
 #### Function creates a flat file embedding for 25M data source
 ##################################################################################

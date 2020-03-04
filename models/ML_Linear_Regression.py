@@ -12,6 +12,8 @@ def run_models(start=10000, stop=100001, step=10000):
     sample_sizes = [*range(start,stop,step)]
     mse=[]
     r2=[]
+    MAX_RATING = 5.0
+
 
     for n in sample_sizes:
 
@@ -26,7 +28,7 @@ def run_models(start=10000, stop=100001, step=10000):
 
         x = movie_features.drop(['userId','movieId','rating'], axis=1)
 
-        y = movie_features['rating']
+        y = movie_features['rating']/MAX_RATING
 
         print("Length of X:")
 
@@ -69,11 +71,11 @@ def run_models(start=10000, stop=100001, step=10000):
         r2.append(r2_score(movie_y_test, movie_y_pred))
 
         # The mean squared error
-        print('Mean squared error: %.2f'
+        print('Mean squared error: %.4f'
               % mean_squared_error(movie_y_test, movie_y_pred))
 
         # The coefficient of determination: 1 is perfect prediction
-        print('Coefficient of determination: %.2f'
+        print('Coefficient of determination: %.4f'
               % r2_score(movie_y_test, movie_y_pred))
 
         # print('Explained variance score : %.2f'
@@ -89,7 +91,7 @@ def plot_models(sample_sizes, mse, r2):
 
 def main():
 
-    sample_sizes, mse, r2 = run_models(start=5000, stop=100001, step=5000)
+    sample_sizes, mse, r2 = run_models(start=10000, stop=100001, step=10000)
 
     accuracy_metrics = pd.DataFrame(data={
                                     'sample': sample_sizes,
@@ -99,7 +101,7 @@ def main():
 
     accuracy_metrics.to_csv(os.path.join(ROOT_DIR, 'data', 'output', 'linear_regression_accuracy.csv'))
 
-    plot_models(sample_sizes, mse, r2)
+#    plot_models(sample_sizes, mse, r2)
 
 
 main()

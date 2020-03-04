@@ -111,7 +111,7 @@ def run_loop(name, train_input_fn, eval_input_fn, model_column_fn,
     model.train(input_fn=train_input_fn)#, hooks=train_hooks)
 
     results = model.evaluate(input_fn=eval_input_fn)
-    print(results)
+
     # Display evaluation metrics
     tf.compat.v1.logging.info('Results at epoch %d / %d',
                     (n + 1) * flags_obj.epochs_between_evals,

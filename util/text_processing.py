@@ -1,4 +1,4 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer
 from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem.porter import PorterStemmer
@@ -51,6 +51,22 @@ def getTFIDF(movie_overview):
     tfidf_word_list = tfidf.get_feature_names()
 
     return tfidf_sparse_matrix, pd.DataFrame(tfidf_sparse_matrix.toarray(), columns=tfidf_word_list),tfidf_word_list
+
+def getHashVector(movie_overview, features=500):
+
+    hash = HashingVectorizer(
+        tokenizer=clean_text,
+        analyzer='word',
+        lowercase=True,
+        dtype=np.float32,
+        n_features=features
+    )
+
+    vector = hash.fit_transform(movie_overview)
+
+
+    return vector.toarray()
+
 
 def test_tfidf():
     input_text=[

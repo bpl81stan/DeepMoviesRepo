@@ -1,7 +1,13 @@
 data/ml-25m/*
 data/ml-100k/*
 data/imdb/*
+data/output/*
 .idea/*
 auth_keys
 auth_keys/*
 data/output/*
+buffer/*
+SAVED_MODELS/*
+util/flags/*
+util/logs/*
+util/misc/*

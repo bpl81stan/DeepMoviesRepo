@@ -30,10 +30,14 @@ def run_models(start=10000, stop=100001, step=10000):
             EPOCHS_BETWEEN_EVALS=20
             INTER_OP_PARALLELISM_THREADS=0
             INTRA_OP_PARALLELISM_THREADS=0
-            BATCH_SIZE=256
-            HIDDEN_UNITS = [256, 256, 256, 128]
+            BATCH_SIZE=512
+            HIDDEN_UNITS = [1024, 512, 256, 512]
 
-            SAVE_MODEL_PATH = os.path.join(ROOT_DIR, 'SAVED_MODELS')
+            CURRENT_MODEL_NAME='AdaMax'
+            SAVE_MODEL_PATH = os.path.join(ROOT_DIR, 'SAVED_MODELS', CURRENT_MODEL_NAME)
+
+            if not(os.path.exists(SAVE_MODEL_PATH)):
+                  os.mkdir(SAVE_MODEL_PATH)
 
             train_input_fn, eval_input_fn, model_column_fn = ml_data.construct_input_fns(
                                                                         batch_size=BATCH_SIZE,
@@ -51,7 +55,18 @@ def run_models(start=10000, stop=100001, step=10000):
                   model_dir=SAVE_MODEL_PATH,
                   feature_columns=feature_columns,
                   hidden_units=HIDDEN_UNITS,
-                  optimizer='Adam', #tf.train.AdamOptimizer(),
+                  optimizer=lambda: tf.keras.optimizers.Adamax(learning_rate=0.002, beta_1=0.9, beta_2=0.999),
+                  #'Adam',
+
+                  # tf.keras.optimizers.Adam(
+                  #                     learning_rate=tf.compat.v1.train.exponential_decay(
+                  #                         learning_rate=0.001,
+                  #                         global_step=tf.compat.v1.train.get_global_step(),
+                  #                         decay_steps=10000,
+                  #                         decay_rate=0.96)),
+
+
+                  #'Adam', #tf.train.AdamOptimizer(),
                   activation_fn=tf.nn.relu,
                   dropout=0.3,
                   batch_norm=True
@@ -82,6 +97,6 @@ def run_models(start=10000, stop=100001, step=10000):
 
 
 def main():
-      run_models(start=10000, stop=1000001, step=10000)
+      run_models(start=50000, stop=50001, step=10000)
 
 main()

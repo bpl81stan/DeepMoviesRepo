@@ -303,7 +303,9 @@ def get_genres(movies):
 
     return movies
 
-def get_overviews(transform='tfidf'):
+def get_overviews(transform='hash'):
+
+    NUMBER_TEXT_FEATURES = 500
 
     # read in 7. overview
     imdb_path=  os.path.join(ROOT_DIR, 'data', 'imdb', 'movie_overview.csv')
@@ -321,6 +323,10 @@ def get_overviews(transform='tfidf'):
     if(transform=='tfidf'):
         tfidf_sparse_matrix, tfidf_df, tfidf_word_list = text.getTFIDF(overviews['overview'])
         ret_overview = ret_overview.merge(tfidf_df, left_index=True, right_index=True)
+    elif(transform=='hash'):
+        overview_vectors = text.getHashVector(overviews['overview'], features=NUMBER_TEXT_FEATURES)
+        overview_vectors = pd.DataFrame(data=[np.array(x) for x in overview_vectors])
+        ret_overview = ret_overview.merge(overview_vectors,left_index=True, right_index=True)
     else:
         ret_overview = text.clean_movie_overview(overviews)
 

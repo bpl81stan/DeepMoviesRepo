@@ -2,6 +2,7 @@ data/ml-25m/*
 data/ml-100k/*
 data/imdb/*
 data/output/*
+data/kaggle/*
 .idea/*
 auth_keys
 auth_keys/*

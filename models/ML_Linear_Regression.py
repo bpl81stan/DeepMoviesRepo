@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from definitions import ROOT_DIR
 import os
+from collections import Counter
 
 def run_models(start=10000, stop=100001, step=10000):
 
@@ -29,6 +30,8 @@ def run_models(start=10000, stop=100001, step=10000):
         x = movie_features.drop(['userId','movieId','rating'], axis=1)
 
         y = movie_features['rating']/MAX_RATING
+
+        print(Counter(y))
 
         print("Length of X:")
 
@@ -58,6 +61,12 @@ def run_models(start=10000, stop=100001, step=10000):
 
         # Make predictions using the testing set
         movie_y_pred = regr.predict(movie_X_test)
+
+        print("Y Distributions:")
+        print(min(movie_y_pred))
+        print(max(movie_y_pred))
+
+        print(Counter(movie_y_test))
 
         # print("Length of y-pred:")
         # print(movie_y_pred.shape)
@@ -91,7 +100,7 @@ def plot_models(sample_sizes, mse, r2):
 
 def main():
 
-    sample_sizes, mse, r2 = run_models(start=10000, stop=100001, step=10000)
+    sample_sizes, mse, r2 = run_models(start=100000, stop=100001, step=10000)
 
     accuracy_metrics = pd.DataFrame(data={
                                     'sample': sample_sizes,
@@ -99,7 +108,7 @@ def main():
                                     'r2': r2
                                     })
 
-    accuracy_metrics.to_csv(os.path.join(ROOT_DIR, 'data', 'output', 'linear_regression_accuracy.csv'))
+    accuracy_metrics.to_csv(os.path.join(ROOT_DIR, 'data', 'output', 'linear_regression_accuracy-2020-03-05.csv'))
 
 #    plot_models(sample_sizes, mse, r2)
 

@@ -39,12 +39,11 @@ def run_models(start=10000, stop=100001, step=10000):
         # print("Length of X:")
         #
         # print(len(x))
-        #
-        # print("Length of Y:")
-        # print(len(y))
-        # print(min(y))
-        # print(max(y))
-        # print(Counter(y))
+        print("Length of Y:")
+        print(len(y))
+        print(min(y))
+        print(max(y))
+        print(Counter(y))
 
         movie_X_train, movie_X_test, movie_y_train, movie_y_test = train_test_split(x, y, test_size=0.05, random_state=42)
 
@@ -69,11 +68,11 @@ def run_models(start=10000, stop=100001, step=10000):
         # Make predictions using the testing set
         movie_y_pred = regr.predict(movie_X_test)
 
-        # print("Length of y-pred:")
-        # print(movie_y_pred.shape)
-        # print(min(movie_y_pred))
-        # print(max(movie_y_pred))
-        # print(Counter(movie_y_pred))
+        print("Length of y-pred:")
+        print(movie_y_pred.shape)
+        print(min(movie_y_pred))
+        print(max(movie_y_pred))
+        print(Counter(movie_y_pred))
 
         # print('Coefficients: \n', regr.coef_)
 
@@ -118,7 +117,7 @@ def plot_models(sample_sizes, mse, r2, accuracy):
 
 def main():
 
-    sample_sizes, mse, r2, accuracy = run_models(start=5000, stop=100001, step=5000)
+    sample_sizes, mse, r2, accuracy = run_models(start=10000, stop=10001, step=5000)
 
     accuracy_metrics = pd.DataFrame(data={
                                         'sample': sample_sizes,
@@ -129,9 +128,9 @@ def main():
                                         # 'recall':recall
                                     })
 
-    accuracy_metrics.to_csv(os.path.join(ROOT_DIR, 'data', 'output', 'logistic_regression_accuracy.csv'))
+    accuracy_metrics.to_csv(os.path.join(ROOT_DIR, 'data', 'output', 'logistic_regression_accuracy-2020-03-05.csv'))
 
-    plot_models(sample_sizes, mse, r2, accuracy)
+    #plot_models(sample_sizes, mse, r2, accuracy)
 
 
 main()

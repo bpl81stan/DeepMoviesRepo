@@ -26,20 +26,25 @@ def run_models(start=10000, stop=100001, step=10000):
             print("New Sample")
             print("N: " + str(n))
             # Configure training sets
-            TRAIN_EPOCHS=100
-            EPOCHS_BETWEEN_EVALS=20
+            TRAIN_EPOCHS=50
+            EPOCHS_BETWEEN_EVALS=10
             INTER_OP_PARALLELISM_THREADS=0
             INTRA_OP_PARALLELISM_THREADS=0
-            BATCH_SIZE=512
-            HIDDEN_UNITS = [1024, 512, 256, 512]
+            BATCH_SIZE=256
+            HIDDEN_UNITS = [256, 256, 256, 128]
 
-            CURRENT_MODEL_NAME='AdaMax'
-            SAVE_MODEL_PATH = os.path.join(ROOT_DIR, 'SAVED_MODELS', CURRENT_MODEL_NAME)
+            CURRENT_MODEL_NAME='DL-Regressor-RMSProp-500k'
+            SAVE_MODEL_PATH = os.path.join(ROOT_DIR, 'SAVED_MODELS',CURRENT_MODEL_NAME)
+            SAVE_MODEL_SAMPLES_PATH = os.path.join(ROOT_DIR, 'SAVED_MODELS',CURRENT_MODEL_NAME, str(n))
 
             if not(os.path.exists(SAVE_MODEL_PATH)):
                   os.mkdir(SAVE_MODEL_PATH)
 
-            train_input_fn, eval_input_fn, model_column_fn = ml_data.construct_input_fns(
+            if not(os.path.exists(SAVE_MODEL_SAMPLES_PATH)):
+                  os.mkdir(SAVE_MODEL_SAMPLES_PATH)
+
+
+            train_input_fn, eval_input_fn, model_column_fn, user_map, movie_map = ml_data.construct_input_fns(
                                                                         batch_size=BATCH_SIZE,
                                                                         repeat=EPOCHS_BETWEEN_EVALS,
                                                                         sample_size=n
@@ -55,7 +60,8 @@ def run_models(start=10000, stop=100001, step=10000):
                   model_dir=SAVE_MODEL_PATH,
                   feature_columns=feature_columns,
                   hidden_units=HIDDEN_UNITS,
-                  optimizer=lambda: tf.keras.optimizers.Adamax(learning_rate=0.002, beta_1=0.9, beta_2=0.999),
+                  optimizer='RMSProp',
+                  #lambda: tf.keras.optimizers.Adamax(learning_rate=0.002, beta_1=0.9, beta_2=0.999),
                   #'Adam',
 
                   # tf.keras.optimizers.Adam(
@@ -95,8 +101,21 @@ def run_models(start=10000, stop=100001, step=10000):
 
             mse_df.to_csv(os.path.join(ROOT_DIR, 'data', 'output', 'DNN_Regressor_accuracy.csv'))
 
+            ROSETTA_PATH = os.path.join(SAVE_MODEL_SAMPLES_PATH, 'rosettas')
+
+            if not (os.path.exists(ROSETTA_PATH)):
+                  os.mkdir(ROSETTA_PATH)
+
+            pd.DataFrame.from_dict(user_map, orient='index', columns=['orig_id', 'new_id']).to_csv(
+                  os.path.join(ROSETTA_PATH, 'sample-'+str(n)+'-usermap.csv')
+            )
+
+            pd.DataFrame.from_dict(movie_map, orient='index', columns=['orig_id', 'new_id']).to_csv(
+                  os.path.join(ROSETTA_PATH, 'sample-'+str(n)+'-moviemap.csv')
+            )
+
 
 def main():
-      run_models(start=50000, stop=50001, step=10000)
+      run_models(start=100000, stop=100001, step=10000)
 
 main()

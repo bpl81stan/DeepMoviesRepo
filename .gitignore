@@ -3,6 +3,8 @@ data/ml-100k/*
 data/imdb/*
 data/output/*
 data/kaggle/*
+data/custom_datasets/*
+data/custom_datasets/c-1m/*
 .idea/*
 auth_keys
 auth_keys/*

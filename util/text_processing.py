@@ -1,4 +1,4 @@
-from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer, CountVectorizer
 from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem.porter import PorterStemmer
@@ -67,6 +67,19 @@ def getHashVector(movie_overview, features=500):
 
     return vector.toarray()
 
+def getCountVector(movie_overview, features=500):
+
+    count = CountVectorizer(
+        tokenizer=clean_text,
+        analyzer='word',
+        lowercase=True,
+        dtype=np.float32,
+        max_features=features
+    )
+
+    vector = count.fit_transform(movie_overview)
+
+    return vector.toarray()
 
 def test_tfidf():
     input_text=[

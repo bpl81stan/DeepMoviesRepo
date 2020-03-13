@@ -188,7 +188,9 @@ def get_overviews():
     path_data = os.path.join(IMDB_PATH, OVERVIEW_FILE)
     overviews = pd.read_csv(path_data, sep=",", header=0)
 
-    overview_vectors = text.getHashVector(overviews['overview'], features=NUMBER_TEXT_FEATURES)
+    overview_vectors = text.getCountVector(overviews['overview'], features=NUMBER_TEXT_FEATURES)
+
+    #text.getHashVector(overviews['overview'], features=NUMBER_TEXT_FEATURES)
 
     overviews[OVERVIEW_COLUMN] = [np.array(x) for x in overview_vectors]
 
@@ -219,9 +221,9 @@ def get_movie_overviews():
         movies = pd.read_csv(os.path.join(IMDB_PATH, 'movies_data.csv'),
                              converters={GENRE_COLUMN: ARRAY_CONVERTER, OVERVIEW_COLUMN: ARRAY_CONVERTER})
 
-        movies = movies.drop(OVERVIEW_COLUMN, axis=1)
-
-        movies = movies.drop(GENRE_COLUMN, axis=1)
+        # movies = movies.drop(OVERVIEW_COLUMN, axis=1)
+        #
+        # movies = movies.drop(GENRE_COLUMN, axis=1)
 
         #movies[GENRE_COLUMN] = [np.array(x) for x in movies[GENRE_COLUMN]]
 
@@ -307,21 +309,23 @@ def convert_df_to_tf_ds(df, shuffle=True, batch_size=256, predict=False):
 
         labels = df.pop(RATING_COLUMN)
 
-        #labels = labels*2
+        # labels = labels*2
         # encoder = LabelEncoder()
         # encoder.fit(labels)
         # encoded_labels = encoder.transform(labels)
         # labels_one_hot = tf.keras.utils.to_categorical(encoded_labels)
-        print("Pre - Binary Coding:")
-        print(labels)
+
+        # print("Pre - Binary Coding:")
+        # print(labels)
 
         labels = labels.apply(lambda x: 1 if x > 3 else 0)
 
-        print("Binary Coding:")
-        print(labels)
+        # print("Binary Coding:")
+        # print(labels)
         # print(labels_one_hot)
 
         ds = tf.data.Dataset.from_tensor_slices((dict(df), labels))
+
     else:
         df = df.drop(columns=RATING_COLUMN, axis=1)
 
@@ -334,48 +338,66 @@ def convert_df_to_tf_ds(df, shuffle=True, batch_size=256, predict=False):
 
     return ds
 
-def get_movielens_df(val_split=.05, test_split=.05, sample_size=10000, batch_size=256):
+def construct_movielens_df(val_split=.05, test_split=.05, sample_size=10000):
 
     original_dataset = construct_df(sample_size)
     #new_dataset = original_dataset
     new_dataset, user_map, movie_map = rebaseline_dataset(original_dataset)
 
+    train_df, test_df = train_test_split(new_dataset, test_size=test_split)
+    train_df, val_df = train_test_split(train_df, test_size=val_split)
+
+    train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
+    test_df = test_df.reset_index(drop=True)
+
+    return train_df, test_df, val_df, test_df, user_map, movie_map
+
+
+def get_movielens_df(batch_size=256):
+
+    ARRAY_CONVERTER = lambda x: np.fromstring(x[1:-1], sep=' ')
+
+    # movies = movies.drop(OVERVIEW_COLUMN, axis=1)
+    #
+    # movies = movies.drop(GENRE_COLUMN, axis=1)
+
+    # movies[GENRE_COLUMN] = [np.array(x) for x in movies[GENRE_COLUMN]]
+
+    # movies[OVERVIEW_COLUMN] = [np.array(x) for x in movies[OVERVIEW_COLUMN]]
+
+    dataset_name = 'c-1m'
+
+    DATASET_PATH = os.path.join(ROOT_DIR, 'data','custom_datasets', dataset_name)
+
+    train_df = pd.read_csv(os.path.join(DATASET_PATH, 'train_df.csv'),
+                           converters={GENRE_COLUMN: ARRAY_CONVERTER, OVERVIEW_COLUMN: ARRAY_CONVERTER}).fillna(0)
+    val_df = pd.read_csv(os.path.join(DATASET_PATH, 'val_df.csv'),
+                         converters={GENRE_COLUMN: ARRAY_CONVERTER, OVERVIEW_COLUMN: ARRAY_CONVERTER}).fillna(0)
+    test_df = pd.read_csv(os.path.join(DATASET_PATH, 'test_df.csv'),
+                          converters={GENRE_COLUMN: ARRAY_CONVERTER, OVERVIEW_COLUMN: ARRAY_CONVERTER}).fillna(0)
+    predict_df = pd.read_csv(os.path.join(DATASET_PATH, 'predict_df.csv'),
+                             converters={GENRE_COLUMN: ARRAY_CONVERTER, OVERVIEW_COLUMN: ARRAY_CONVERTER}).fillna(0)
+    user_map = pd.read_csv(os.path.join(DATASET_PATH, 'usermap.csv'))
+    movie_map = pd.read_csv(os.path.join(DATASET_PATH, 'moviemap.csv'))
+
     num_user_ids = len(user_map)
     num_item_ids = len(movie_map)
 
-    if(val_split==0):
-        train_df, test_df = train_test_split(new_dataset, test_size=test_split)
-        train_df = test_df.reset_index(drop=True)
-        test_df = test_df.reset_index(drop=True)
-        # train_df = pd.DataFrame(train_df)
-        # test_df = pd.DataFrame(test_df)
+    features, feature_layer_inputs = construct_features(num_user_ids, num_item_ids)
 
-        train_ds = convert_df_to_tf_ds(train_df, shuffle=True, batch_size=batch_size)
-        test_ds = convert_df_to_tf_ds(test_df, shuffle=False, batch_size=batch_size)
+    train_df = train_df.reset_index(drop=True)
+    val_df = val_df.reset_index(drop=True)
+    test_df = test_df.reset_index(drop=True)
+    predict_df = predict_df.reset_index(drop=True)
 
-        features = construct_features(num_user_ids,num_item_ids)
+    train_ds = convert_df_to_tf_ds(train_df, shuffle=True, batch_size=batch_size)
+    val_ds = convert_df_to_tf_ds(val_df, shuffle=False, batch_size=batch_size)
+    test_ds = convert_df_to_tf_ds(test_df, shuffle=False, batch_size=batch_size)
+    predict_ds = convert_df_to_tf_ds(test_df, shuffle=False, batch_size=batch_size, predict=True)
 
-        return train_ds, test_ds, user_map, movie_map, features
-
-    else:
-        train_df, test_df = train_test_split(new_dataset, test_size=test_split)
-        train_df, val_df = train_test_split(train_df, test_size=val_split)
-
-        # train_df = pd.DataFrame(train_df)
-        # val_df = pd.DataFrame(val_df)
-        # test_df = pd.DataFrame(test_df)
-
-        train_df = train_df.reset_index(drop=True)
-        val_df = val_df.reset_index(drop=True)
-        test_df = test_df.reset_index(drop=True)
-        train_ds = convert_df_to_tf_ds(train_df, shuffle=True, batch_size=batch_size)
-        val_ds = convert_df_to_tf_ds(val_df, shuffle=False, batch_size=batch_size)
-        test_ds = convert_df_to_tf_ds(test_df, shuffle=False, batch_size=batch_size)
-        predict_ds = convert_df_to_tf_ds(test_df, shuffle=False, batch_size=batch_size, predict=True)
-
-        features = construct_features(num_user_ids, num_item_ids)
-
-        return train_ds, val_ds, test_ds, predict_ds, test_df, user_map, movie_map, features, train_df, val_df
+    return train_ds, val_ds, test_ds, predict_ds, test_df, user_map, \
+               movie_map, features, feature_layer_inputs, train_df, val_df
 
 
 ##################################################################
@@ -384,6 +406,15 @@ def get_movielens_df(val_split=.05, test_split=.05, sample_size=10000, batch_siz
 
 
 def construct_features(num_user_ids, num_item_ids):
+
+    feature_columns = []
+    feature_layer_inputs = {}
+
+    # numeric columns
+    for header in [POPULARITY_COLUMN,REVENUE_COLUMN, RUNTIME_COLUMN,
+                   VOTE_AVERAGE_COLUMN, VOTE_COUNT_COLUMN, TIMESTAMP_COLUMN]:
+        feature_columns.append(tf.feature_column.numeric_column(header))
+        feature_layer_inputs[header]=tf.keras.Input(shape=(1,), name=header)
 
     print("User Items count:")
     NUM_ITEMS = np.int(np.ceil(num_item_ids/np.sqrt(_ITEM_EMBEDDING_DIM))*np.sqrt(_ITEM_EMBEDDING_DIM))
@@ -396,34 +427,42 @@ def construct_features(num_user_ids, num_item_ids):
     user_embedding = tf.feature_column.embedding_column(
         user_id, _USER_EMBEDDING_DIM, max_norm=np.sqrt(_USER_EMBEDDING_DIM))
 
+    feature_columns.append(user_embedding)
+    feature_layer_inputs[USER_COLUMN]=tf.keras.Input(shape=(1,), name=USER_COLUMN, dtype=tf.int64)
+
     item_id = tf.feature_column.categorical_column_with_vocabulary_list(
         ITEM_COLUMN, range(1, NUM_ITEMS))
     item_embedding = tf.feature_column.embedding_column(
         item_id, _ITEM_EMBEDDING_DIM, max_norm=np.sqrt(_ITEM_EMBEDDING_DIM))
 
-    time = tf.feature_column.numeric_column(TIMESTAMP_COLUMN)
+    feature_columns.append(item_embedding)
+    feature_layer_inputs[ITEM_COLUMN] = tf.keras.Input(shape=(1,), name=ITEM_COLUMN, dtype=tf.int64)
 
-    # genres = tf.feature_column.numeric_column(
-    #     GENRE_COLUMN, shape=(N_GENRE,), dtype=tf.uint8)
+    genres = tf.feature_column.numeric_column(
+        GENRE_COLUMN, shape=(N_GENRE,), dtype=tf.uint8)
+    feature_columns.append(genres)
+    feature_layer_inputs[GENRE_COLUMN] = tf.keras.Input(shape=(N_GENRE,), name=GENRE_COLUMN)
+
+    overviews = tf.feature_column.numeric_column(OVERVIEW_COLUMN, shape=(NUMBER_TEXT_FEATURES,), dtype=tf.float64)
+    feature_columns.append(overviews)
+    feature_layer_inputs[OVERVIEW_COLUMN] = tf.keras.Input(shape=(NUMBER_TEXT_FEATURES,), name=OVERVIEW_COLUMN)
+
+    # popularity = tf.feature_column.numeric_column(POPULARITY_COLUMN)
     #
-    # overviews = tf.feature_column.numeric_column(OVERVIEW_COLUMN, shape=(NUMBER_TEXT_FEATURES,), dtype=tf.float64)
+    # revenue = tf.feature_column.numeric_column(REVENUE_COLUMN)
+    #
+    # runtime = tf.feature_column.numeric_column(RUNTIME_COLUMN)
+    #
+    # vote_average = tf.feature_column.numeric_column(VOTE_AVERAGE_COLUMN)
+    #
+    # vote_count = tf.feature_column.numeric_column(VOTE_COUNT_COLUMN)
 
-    popularity = tf.feature_column.numeric_column(POPULARITY_COLUMN)
-
-    revenue = tf.feature_column.numeric_column(REVENUE_COLUMN)
-
-    runtime = tf.feature_column.numeric_column(RUNTIME_COLUMN)
-
-    vote_average = tf.feature_column.numeric_column(VOTE_AVERAGE_COLUMN)
-
-    vote_count = tf.feature_column.numeric_column(VOTE_COUNT_COLUMN)
-
-    feature_columns = [user_embedding, item_embedding, time,
-                       # genres,overviews,
-                       popularity, revenue, runtime, vote_average, vote_count]
+    # feature_columns = [user_embedding, item_embedding, time,
+    #                    # genres,overviews,
+    #                    popularity, revenue, runtime, vote_average, vote_count]
 
 
-    return feature_columns
+    return feature_columns, feature_layer_inputs
 
 def _deserialize(examples_serialized):
   features = tf.io.parse_example(examples_serialized, _FEATURE_MAP)
@@ -505,13 +544,30 @@ def construct_input_fns(batch_size=16, repeat=1, sample_size=100000, validation=
 
 def main():
 
-    movies = get_movie_overviews()
+    sample_size = 1000000
+    dataset_name = 'c-1m'
 
-    for col in movies.iloc[0,:]:
-        print(col)
+    DATASET_PATH = os.path.join(ROOT_DIR, 'data','custom_datasets', dataset_name)
 
-    print(movies.info())
-# main()
+    train_df, test_df, val_df, predict_df, user_map, movie_map = \
+        construct_movielens_df(val_split=.01, test_split=.05, sample_size=sample_size)
+
+    train_df.to_csv(os.path.join(DATASET_PATH, 'train_df.csv'), index=False, index_label=False)
+
+    test_df.to_csv(os.path.join(DATASET_PATH, 'test_df.csv'), index=False, index_label=False)
+
+    val_df.to_csv(os.path.join(DATASET_PATH, 'val_df.csv'), index=False, index_label=False)
+
+    predict_df.to_csv(os.path.join(DATASET_PATH, 'predict_df.csv'), index=False, index_label=False)
+
+    pd.DataFrame.from_dict(user_map, orient='index', columns=[USER_COLUMN, 'NEW_'+USER_COLUMN])\
+        .to_csv(os.path.join(DATASET_PATH, 'usermap.csv'))
+
+    pd.DataFrame.from_dict(movie_map, orient='index', columns=[ITEM_COLUMN, 'NEW_'+ITEM_COLUMN])\
+        .to_csv(os.path.join(DATASET_PATH, 'moviemap.csv'))
+
+
+main()
 
 
 
